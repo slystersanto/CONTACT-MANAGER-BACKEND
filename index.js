@@ -8,7 +8,11 @@ const DB =process.env.DB;
 const cors = require("cors");
 
 app.use(express.json()); // middleware for all post requests to convert json data from body into JS Object
-app.use(cors());
+ app.use(
+    cors({
+      origin: "https://tranquil-mandazi-09da01.netlify.app",
+    })
+   );
 
 app.get("/users",async (req,res)=>{
     try {
