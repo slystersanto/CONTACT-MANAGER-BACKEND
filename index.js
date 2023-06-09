@@ -7,6 +7,7 @@ const {ObjectId } = require('mongodb');
 const DB =process.env.DB;
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const SECRET_KEY=process.env.SECRET_KEY;
 
 const cors = require("cors");
 
