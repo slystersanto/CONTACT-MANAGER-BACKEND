@@ -11,11 +11,13 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 
 app.use(express.json()); // middleware for all post requests to convert json data from body into JS Object
- app.use(
-    cors({
-      origin: "https://tranquil-mandazi-09da01.netlify.app",
-    })
-   );
+app.use((req, res, next) => {
+   
+  res.setHeader('Access-Control-Allow-Origin', 'https://tranquil-mandazi-09da01.netlify.app','http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
 
    const authorize = (req, res, next) => {
