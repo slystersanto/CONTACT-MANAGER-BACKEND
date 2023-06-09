@@ -20,20 +20,25 @@ app.use((req, res, next) => {
 });
 
 
-   const authorize = (req, res, next) => {
-    if (req.headers.authorization) {
-        try {
-            const verify = jwt.verify(req.headers.authorization, SECRET_KEY);
-            if (verify) {
-                next();
-            }
-        } catch (error) {
-            res.status(401).json({message: "Unauthorized"});
-        }
+let authorize = function (request, response, next) {
+  if (request.headers.authorization) {
+    let verify = jwt.verify(request.headers.authorization, SECRET_KEY);
+    console.log(verify);
+    if (verify) {
+      request.userid = verify.id;
+
+      next();
     } else {
-        res.status(401).json({message: "Unauthorized"});
+      response.status(401).json({
+        message: "Unauthorized",
+      });
     }
-} 
+  } else {
+    response.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+};
 
 
 
