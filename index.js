@@ -5,6 +5,9 @@ const mongodb = require("mongodb");
 const mongoclient = mongodb.MongoClient;
 const {ObjectId } = require('mongodb');
 const DB =process.env.DB;
+const bcryptjs = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 const cors = require("cors");
 
 app.use(express.json()); // middleware for all post requests to convert json data from body into JS Object
@@ -14,7 +17,78 @@ app.use(express.json()); // middleware for all post requests to convert json dat
     })
    );
 
-app.get("/users",async (req,res)=>{
+
+   const authorize = (req, res, next) => {
+    if (req.headers.authorization) {
+        try {
+            const verify = jwt.verify(req.headers.authorization, SECRET);
+            if (verify) {
+                next();
+            }
+        } catch (error) {
+            res.status(401).json({message: "Unauthorized"});
+        }
+    } else {
+        res.status(401).json({message: "Unauthorized"});
+    }
+} 
+
+
+
+app.post('/register', async (req, res) => {  // register
+    console.log(req.body)
+    try {
+      const connection = await mongoclient.connect(DB);
+      const db = connection.db('UsersList');
+      const user = await db.collection('myusers').findOne({ username: req.body.email });
+      if (user) {
+        res.json({ message: 'User already exists' });
+      } else {
+        const salt = await bcryptjs.genSalt(10);
+        const hashedPassword = await bcryptjs.hash(req.body.password, salt);
+        const newUser = {
+          email: req.body.email,
+          password: hashedPassword
+        };
+        await db.collection('users').insertOne(newUser);
+        res.json({ message: 'User created and registered successfully' });
+      }
+      connection.close();
+    } catch (error) {
+      console.log(error);
+      res.json({ message: 'Error creating user' });
+    }
+  });
+
+
+
+
+  app.post('/login', async (req, res) => {
+    try {
+      console.log('req.body:', req.body); // check the request body
+      const connection = await mongoclient.connect(DB);
+      const db = connection.db('UsersList');
+      const user = await db.collection('users').findOne({ email: req.body.email }); // Updated collection name to 'users'
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      console.log('user:', user); // check if the user object is retrieved correctly
+      const isPasswordMatch = await bcryptjs.compare(req.body.password, user.password);
+      if (!isPasswordMatch) {
+        return res.status(401).json({ message: 'Incorrect password' });
+      }
+      const token = jwt.sign({ _id: user._id, email: user.email }, process.env.SECRET_KEY, { expiresIn: '1h' });
+      res.status(200).json({ message: 'Login successful', token });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+   
+
+
+
+app.get("/users",authorize,async (req,res)=>{
     try {
         const connection=await mongoclient.connect(DB);
         const db=connection.db("UsersList");
@@ -30,7 +104,7 @@ app.get("/users",async (req,res)=>{
 
 });
 
-app.get("/user-edit/:id", async (req, res) => {
+app.get("/user-edit/:id",authorize, async (req, res) => {
   try {
     console.log(req.params.id)
     const connection = await mongoclient.connect(DB);
@@ -49,7 +123,7 @@ app.get("/user-edit/:id", async (req, res) => {
   }
 });
 
-app.get("/user-view/:id", async (req, res) => {
+app.get("/user-view/:id",authorize, async (req, res) => {
   try {
     console.log(req.params.id)
     const connection = await mongoclient.connect(DB);
@@ -69,7 +143,7 @@ app.get("/user-view/:id", async (req, res) => {
 });
 
   
-  app.post("/user-create", async (req, res) => {
+  app.post("/user-create",authorize, async (req, res) => {
     try {
       console.log(req.body);
       const connection = await mongoclient.connect(DB);
@@ -89,7 +163,7 @@ app.get("/user-view/:id", async (req, res) => {
 ;
 
 
-  app.put("/user-edit/:id", async (req, res) => {
+  app.put("/user-edit/:id",authorize, async (req, res) => {
     try {
       const connection = await mongoclient.connect(DB);
       const db = connection.db("UsersList");
@@ -110,7 +184,7 @@ app.get("/user-view/:id", async (req, res) => {
   
 
   
-  app.delete("/user-delete/:id", async (req, res) => {
+  app.delete("/user-delete/:id",authorize, async (req, res) => {
     try {
       const connection = await mongoclient.connect(DB);
       const db = connection.db("UsersList");
