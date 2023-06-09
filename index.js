@@ -21,7 +21,7 @@ app.use(express.json()); // middleware for all post requests to convert json dat
    const authorize = (req, res, next) => {
     if (req.headers.authorization) {
         try {
-            const verify = jwt.verify(req.headers.authorization, SECRET);
+            const verify = jwt.verify(req.headers.authorization, SECRET_KEY);
             if (verify) {
                 next();
             }
